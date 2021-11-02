@@ -65,6 +65,7 @@ function initDebug() {
 	ff.addInput(PARAMS.freq, 'sub', {min: 100, max: 5000, step: 1});
 	const fa = ts.addFolder({title: 'Amplitude'});
 	fa.addInput(PARAMS.amp, 'sub', {min: 0, max: 0.4});
+
 	const tc = tabs.pages[1];
 	tc.addInput(PARAMS, 'darkness', {min: 0.8, max: 1});
 	tc.addInput(PARAMS, 'tilt', {min: 0, max: 2});
@@ -72,7 +73,6 @@ function initDebug() {
 		x: {min: 0, max: 1},
 		y: {min: 0, max: 1},
 	});
-
 	tc.addInput(CAMERA.pos, 'angle', {min: 0, max: TWO_PI});
 	tc.addInput(CAMERA.pos, 'zoom', {min: 1, max: 2});
 	const fb = tc.addFolder({title: 'Bokeh'});
@@ -85,16 +85,16 @@ function initDebug() {
 	});
 }
 
-function drawDot(ox, oy, szo) {
+function drawDot(ox, oy, bokeh) {
 	if (ox < 0 || ox >= width || oy < 0 || oy >= height) {
 		return;
 	}
 
-	const sz = map(szo, 0, 1, 1, PARAMS.bokeh.maxSize);
-	const rep = map(szo, 0, 1, 5, 10);
-	const al = map(pow(szo, 1), 0, 1, PARAMS.darkness.min, PARAMS.darkness.max);
+	const sz = map(bokeh, 0, 1, 1, PARAMS.bokeh.maxSize);
+	const count = map(bokeh, 0, 1, 5, 10);
+	const al = map(pow(bokeh, 1), 0, 1, PARAMS.darkness.min, PARAMS.darkness.max);
 
-	for (let p = 0; p < rep; p++) {
+	for (let i = 0; i < count; i++) {
 		const da = random(TWO_PI);
 		const dl = random() * sz;
 		const x = round(ox + cos(da) * dl);
@@ -103,36 +103,35 @@ function drawDot(ox, oy, szo) {
 			continue;
 		}
 
-		pixels[y * width * 4 + x * 4] *= al;
-		pixels[y * width * 4 + x * 4 + 1] *= al;
-		pixels[y * width * 4 + x * 4 + 2] *= al * 1.002;
+		const ofs = y * width * 4 + x * 4;
+		pixels[ofs] *= al;
+		pixels[ofs + 1] *= al;
+		pixels[ofs + 2] *= al * 1.002;
 	}
 }
 
-function drawAlga(camPos, bokeh) {
+function drawAlga(camPos, getBokeh) {
 	const sz = min(width, height) * camPos.zoom;
 
 	loadPixels();
 	for (let i = 0; i < PARAMS.count; i++) {
 		const ip = i / PARAMS.count;
-
+		// main wave
 		const ma = ip * 2 * PI;
 		const ml = sin(camPos.angle + PARAMS.freq.main * ma) * sz;
 		const mx = cos(ma) * ml;
 		const my = sin(ma) * ml;
-
+		// sub wave
 		const sa = ma + PI / 2;
 		const sl = sin(PARAMS.freq.sub * ma) * sz * PARAMS.amp.sub;
 		const sx = cos(sa) * sl;
 		const sy = sin(sa) * sl;
 
-		const aa = atan2(my + sy, mx + sx);
-		const dd = dist(0, 0, mx + sx, my + sy);
-
-		const x = camPos.x * width + cos(aa) * dd;
-		const y = camPos.y * height + sin(aa) * dd * PARAMS.tilt;
-		const f = bokeh(x, y);
-		drawDot(x, y, f);
+		const ca = atan2(my + sy, mx + sx);
+		const cl = dist(0, 0, mx + sx, my + sy);
+		const x = camPos.x * width + cos(ca) * cl;
+		const y = camPos.y * height + sin(ca) * cl * PARAMS.tilt;
+		drawDot(x, y, getBokeh(x, y));
 	}
 	updatePixels();
 }
@@ -196,12 +195,12 @@ function draw() {
 			return 0;
 		}
 
-		const td = pow(cos(t * PI), 48) * 2000;
 		const fx = CAMERA.focus.x * width;
 		const fy = CAMERA.focus.y * height;
 		const d = PARAMS.bokeh.linear ?
 			dist(0, y, 0, fy) * 2 :
 			dist(x, y, fx, fy);
+		const td = pow(cos(t * PI), 48) * 2000;
 		return 1 - exp(-pow((d + td) * 0.002, 2) / (2 * PARAMS.bokeh.sigma * PARAMS.bokeh.sigma));
 	});
 
