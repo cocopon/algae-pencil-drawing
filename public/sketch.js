@@ -6,7 +6,7 @@ const PARAMS = {
 	},
 	freq: {
 		main: 2,
-		sub: 1000,
+		sub: 2230,
 	},
 	count: 36000,
 	darkness: {
@@ -26,7 +26,7 @@ const CAMERA = {
 	pos: {
 		x: 0.5,
 		y: 0.5,
-		angle: 0,
+		angle: 2.4,
 		zoom: 1,
 	},
 	focus: {
@@ -37,6 +37,7 @@ const CAMERA = {
 	},
 };
 let start = (new Date()).getTime();
+let up = true;
 let fps = null;
 
 function initDebug() {
@@ -53,38 +54,39 @@ function initDebug() {
 
 	const tabs = pane.addTab({
 		pages: [
-			{title: 'Camera'},
 			{title: 'Shape'},
+			{title: 'Camera'},
 		],
 	});
-	const tc = tabs.pages[0];
+
+	const ts = tabs.pages[0];
+	const ff = ts.addFolder({title: 'Frequency'});
+	ff.addInput(PARAMS.freq, 'main', {min: 2, max: 10, step: 2});
+	ff.addInput(PARAMS.freq, 'sub', {min: 100, max: 5000, step: 1});
+	const fa = ts.addFolder({title: 'Amplitude'});
+	fa.addInput(PARAMS.amp, 'sub', {min: 0, max: 0.4});
+	const tc = tabs.pages[1];
 	tc.addInput(PARAMS, 'darkness', {min: 0.8, max: 1});
 	tc.addInput(PARAMS, 'tilt', {min: 0, max: 2});
 	tc.addInput(CAMERA, 'pos', {
 		x: {min: 0, max: 1},
 		y: {min: 0, max: 1},
 	});
+
 	tc.addInput(CAMERA.pos, 'angle', {min: 0, max: TWO_PI});
 	tc.addInput(CAMERA.pos, 'zoom', {min: 1, max: 2});
 	const fb = tc.addFolder({title: 'Bokeh'});
 	fb.addInput(PARAMS.bokeh, 'enabled');
-	fb.addInput(PARAMS.bokeh, 'maxSize', {min: 1, max: 200, label: 'bokeh'});
+	fb.addInput(PARAMS.bokeh, 'maxSize', {min: 1, max: 400, label: 'bokeh'});
 	fb.addInput(PARAMS.bokeh, 'linear');
 	fb.addInput(CAMERA, 'focus', {
 		x: {min: 0, max: 1},
 		y: {min: 0, max: 1},
 	});
-
-	const ts = tabs.pages[1];
-	const ff = ts.addFolder({title: 'Frequency'});
-	ff.addInput(PARAMS.freq, 'main', {min: 2, max: 10, step: 2});
-	ff.addInput(PARAMS.freq, 'sub', {min: 100, max: 5000, step: 1});
-	const fa = ts.addFolder({title: 'Amplitude'});
-	fa.addInput(PARAMS.amp, 'sub', {min: 0, max: 0.4});
 }
 
 function drawDot(ox, oy, szo) {
-	if (ox < 0 || ox > width || oy < 0 || oy > height) {
+	if (ox < 0 || ox >= width || oy < 0 || oy >= height) {
 		return;
 	}
 
@@ -108,9 +110,6 @@ function drawDot(ox, oy, szo) {
 }
 
 function drawAlga(camPos, bokeh) {
-	fill(255, 30);
-	rect(0, 0, width, height);
-
 	const sz = min(width, height) * camPos.zoom;
 
 	loadPixels();
@@ -189,6 +188,9 @@ function draw() {
 		PARAMS.bokeh.linear = !mouseIsPressed;
 	}
 
+	fill(255, 30);
+	rect(0, 0, width, height);
+
 	drawAlga(CAMERA.pos, (x, y) => {
 		if (!PARAMS.bokeh.enabled) {
 			return 0;
@@ -213,11 +215,13 @@ function refreshAlga() {
 	PARAMS.amp.sub = random(0.05, map(fmp, 0, 1, 0.4, 0.08));
 
 	CAMERA.pos.x = random(0.1, 0.9);
-	CAMERA.pos.y = 0.5 + random(0.2, 0.4) * (random() < 0.5 ? -1 : +1);
+	CAMERA.pos.y = 0.5 + random(0.2, 0.4) * (up ? -1 : +1);
 	CAMERA.pos.angle = random(TWO_PI);
 	CAMERA.pos.zoom = random(1, 1.2);
 	CAMERA.focus.angle = atan2(0.5 - CAMERA.pos.y, 0.5 - CAMERA.pos.x);
 	CAMERA.focus.length = sqrt(2) * random(0.5, 1);
+
+	up = !up;
 }
 
 function windowResized() {
