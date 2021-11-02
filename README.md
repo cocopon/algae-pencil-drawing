@@ -1,5 +1,5 @@
 # Algae Pencil Drawing
-Algae pencil drawing, visualization of the beauty of trigonometric functions.
+Algae pencil drawing, visualization of the beauty of the trigonometric functions.
 
 ![](screenshot.jpg)
 

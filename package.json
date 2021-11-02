@@ -1,7 +1,7 @@
 {
   "name": "algae-pencil-drawing",
   "version": "0.0.0",
-  "description": "Algae pencil drawing, visualization of the beauty of trigonometric functions.",
+  "description": "Algae pencil drawing, visualization of the beauty of the trigonometric functions.",
   "scripts": {
     "start": "run-p server",
     "server": "http-server -c-1 public"
